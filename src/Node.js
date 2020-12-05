@@ -5,22 +5,36 @@ class Node extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      key: this.props.key,
       column: this.props.column,
       row: this.props.row,
       isStart: this.props.isStart,
       isFinish: this.props.isFinish,
       isBlocked: this.props.isBlocked,
-      isClicked: this.props.isClicked,
+      handleMouseDown: this.props.handleMouseDown,
+      handleMouseOver: this.props.handleMouseOver,
+      handleMouseUp: this.props.handleMouseUp,
+      handleMouseLeave: this.props.handleMouseLeave,
     };
-    this.blockNode = this.blockNode.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
-    if (this.props.isClicked !== nextProps.isClicked) {
-      this.setState({ isClicked: nextProps.isClicked }, () => {
-        console.log(this.state.isClicked);
+    if (this.props !== nextProps) {
+      this.setState({
+        isStart: nextProps.isStart,
+        isFinish: nextProps.isFinish,
+        isBlocked: nextProps.isBlocked,
+        isErasing: nextProps.isErasing,
       });
     }
+  }
+
+  shouldComponentUpdate(nextProps) {
+    return (
+      this.props.isBlocked !== nextProps.isBlocked ||
+      this.props.isStart !== nextProps.isStart ||
+      this.props.isFinish !== nextProps.isFinish
+    );
   }
 
   extraClassNameFunction() {
@@ -34,19 +48,46 @@ class Node extends React.Component {
     return extraClassName;
   }
 
-  blockNode() {
-    if (!this.state.isStart && !this.state.isFinish && this.state.isClicked) {
-      this.setState({ isBlocked: true });
-    }
-  }
-
   render() {
     let extraClassName = this.extraClassNameFunction();
+    const handleMouseDown = this.state.handleMouseDown,
+      handleMouseOver = this.state.handleMouseOver,
+      handleMouseUp = this.state.handleMouseUp,
+      handleMouseLeave = this.state.handleMouseLeave;
     return (
       <div
         className={"node " + extraClassName}
-        onMouseClick={() => this.blockNode()}
-        onMouseEnter={() => this.blockNode()}
+        onMouseDown={(event) =>
+          handleMouseDown(
+            event,
+            this.state.column,
+            this.state.row,
+            this.state.isStart,
+            this.state.isFinish
+          )
+        }
+        onMouseOver={handleMouseOver(
+          this.state.column,
+          this.state.row,
+          this.state.isStart,
+          this.state.isFinish
+        )}
+        onMouseLeave={() =>
+          handleMouseLeave(
+            this.state.column,
+            this.state.row,
+            this.state.isStart,
+            this.state.isFinish
+          )
+        }
+        onMouseUp={() =>
+          handleMouseUp(
+            this.state.column,
+            this.state.row,
+            this.state.isStart,
+            this.state.isFinish
+          )
+        }
       ></div>
     );
   }
