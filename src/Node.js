@@ -1,4 +1,3 @@
-import { render } from "@testing-library/react";
 import React from "react";
 
 class Node extends React.Component {
@@ -11,6 +10,7 @@ class Node extends React.Component {
       isStart: this.props.isStart,
       isFinish: this.props.isFinish,
       isBlocked: this.props.isBlocked,
+      isVisited: this.props.isVisited,
       handleMouseDown: this.props.handleMouseDown,
       handleMouseOver: this.props.handleMouseOver,
       handleMouseUp: this.props.handleMouseUp,
@@ -24,7 +24,7 @@ class Node extends React.Component {
         isStart: nextProps.isStart,
         isFinish: nextProps.isFinish,
         isBlocked: nextProps.isBlocked,
-        isErasing: nextProps.isErasing,
+        isVisited: nextProps.isVisited,
       });
     }
   }
@@ -33,7 +33,8 @@ class Node extends React.Component {
     return (
       this.props.isBlocked !== nextProps.isBlocked ||
       this.props.isStart !== nextProps.isStart ||
-      this.props.isFinish !== nextProps.isFinish
+      this.props.isFinish !== nextProps.isFinish ||
+      this.props.isVisited !== nextProps.isVisited
     );
   }
 
@@ -44,6 +45,8 @@ class Node extends React.Component {
       ? "finish"
       : this.state.isBlocked
       ? "blocked"
+      : this.state.isVisited
+      ? "visited"
       : "";
     return extraClassName;
   }
@@ -66,12 +69,14 @@ class Node extends React.Component {
             this.state.isFinish
           )
         }
-        onMouseOver={handleMouseOver(
-          this.state.column,
-          this.state.row,
-          this.state.isStart,
-          this.state.isFinish
-        )}
+        onMouseOver={() =>
+          handleMouseOver(
+            this.state.column,
+            this.state.row,
+            this.state.isStart,
+            this.state.isFinish
+          )
+        }
         onMouseLeave={() =>
           handleMouseLeave(
             this.state.column,

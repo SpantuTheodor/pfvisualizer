@@ -21,3 +21,15 @@ export const dragging_finish = () => {
     type: "Dragging_Finish",
   };
 };
+
+export const visualize_true = () => {
+  return {
+    type: "Visualize_True",
+  };
+};
+
+export const visualize_false = () => {
+  return {
+    type: "Visualize_False",
+  };
+};

@@ -1,14 +1,22 @@
 import React from "react";
 import Node from "./Node";
+import dijkstra from "./algorithms/unweighted/dijkstra.js";
+
 import { connect } from "react-redux";
-import { mouse_click, erase, dragging_start, dragging_finish } from "./actions";
+import {
+  mouse_click,
+  erase,
+  dragging_start,
+  dragging_finish,
+  visualize_true,
+  visualize_false,
+} from "./actions";
 
 class Grid extends React.Component {
   constructor() {
     super();
     this.state = {
       nodes: [],
-      blockedNodes: [],
       lastNodeDraggedOver: [],
     };
 
@@ -35,13 +43,13 @@ class Grid extends React.Component {
         nodes: auxiliary,
       });
     } else {
-      let auxiliary = this.state.blockedNodes.slice();
+      let auxiliary = this.state.nodes.slice();
 
       // Left Click Case
       if (event.nativeEvent.which === 1) {
-        auxiliary[column][row] = true;
+        auxiliary[column][row][4] = true;
         this.setState({
-          blockedNodes: auxiliary,
+          nodes: auxiliary,
         });
       }
 
@@ -50,34 +58,39 @@ class Grid extends React.Component {
         this.props.erase();
         auxiliary[column][row] = false;
         this.setState({
-          blockedNodes: auxiliary,
+          nodes: auxiliary,
         });
       }
     }
   }
 
   handleMouseOver(column, row, isStart, isFinish) {
+    // Dragging the start node case
     if (this.props.isDraggingStart) {
       let auxiliary = this.state.nodes.slice();
       auxiliary[column][row][2] = true;
       this.setState({
         nodes: auxiliary,
       });
+
+      // Dragging the finish node case
     } else if (this.props.isDraggingFinish) {
       let auxiliary = this.state.nodes.slice();
       auxiliary[column][row][3] = true;
       this.setState({
         nodes: auxiliary,
       });
+
+      // Blocking or erasing case
     } else {
-      let auxiliary = this.state.blockedNodes.slice();
+      let auxiliary = this.state.nodes.slice();
       if (!isStart && !isFinish && this.props.isClicked) {
         if (this.props.isErasing) {
-          auxiliary[column][row] = false;
+          auxiliary[column][row][4] = false;
         } else {
-          auxiliary[column][row] = true;
+          auxiliary[column][row][4] = true;
         }
-        this.setState({ blockedNodes: auxiliary });
+        this.setState({ nodes: auxiliary });
       }
     }
   }
@@ -85,6 +98,8 @@ class Grid extends React.Component {
   handleMouseUp(column, row, isStart, isFinish) {
     this.props.mouse_click();
     let auxiliary = this.state.nodes.slice();
+
+    // Dragging the start node case
     if (this.props.isDraggingStart) {
       if (isFinish) {
         auxiliary[this.state.lastNodeDraggedOver[0]][
@@ -102,6 +117,8 @@ class Grid extends React.Component {
           nodes: auxiliary,
         });
       }
+
+      // Dragging the finish node case
     } else if (this.props.isDraggingFinish) {
       if (isStart) {
         auxiliary[this.state.lastNodeDraggedOver[0]][
@@ -121,12 +138,14 @@ class Grid extends React.Component {
       }
     }
 
+    // Erasing case
     if (this.props.isErasing) {
       this.props.erase();
     }
   }
 
   handleMouseLeave(column, row) {
+    // Dragging start case
     let auxiliary = this.state.nodes.slice();
     if (this.props.isDraggingStart) {
       auxiliary[column][row][2] = false;
@@ -139,6 +158,7 @@ class Grid extends React.Component {
       });
     }
 
+    // Dragging finish case
     if (this.props.isDraggingFinish) {
       auxiliary[column][row][3] = false;
       let lastNodeDraggedOver = [];
@@ -158,18 +178,16 @@ class Grid extends React.Component {
     });
 
     let nodes = [],
-      blockedNodes = [],
       start_column = 12,
       start_row = 15,
       finish_column = 12,
       finish_row = 45,
       isStart,
       isFinish,
-      isBlocked = false;
-
+      isBlocked = false,
+      isVisited = false;
     for (let column = 0; column < 25; column++) {
       let current_row = [];
-      let current_row_blockedNodes = [];
       for (let row = 0; row < 58; row++) {
         row === start_row && column === start_column
           ? (isStart = true)
@@ -177,19 +195,38 @@ class Grid extends React.Component {
         row === finish_row && column === finish_column
           ? (isFinish = true)
           : (isFinish = false);
-        let current_node = [column, row, isStart, isFinish, isBlocked];
+        let current_node = [
+          column,
+          row,
+          isStart,
+          isFinish,
+          isBlocked,
+          isVisited,
+        ];
         current_row.push(current_node);
-        current_row_blockedNodes.push(false);
       }
       nodes.push(current_row);
-      blockedNodes.push(current_row_blockedNodes);
     }
-    this.setState({ nodes, blockedNodes });
+    this.setState({ nodes });
+  }
+
+  componentWillReceiveProps(nextProps) {
+    let auxiliary = this.state.nodes.slice();
+    if (this.props.isVisualizing !== nextProps.isVisualizing) {
+      let visited_nodes = dijkstra(this.state.nodes);
+      for (let i in visited_nodes) {
+        setTimeout(() => {
+          auxiliary[visited_nodes[i][0]][visited_nodes[i][1]][5] = true;
+          this.setState({
+            nodes: auxiliary,
+          });
+        }, 50);
+      }
+    }
   }
 
   render() {
     let nodes = this.state.nodes;
-    let blockedNodes = this.state.blockedNodes;
 
     return (
       <div id="grid">
@@ -204,7 +241,8 @@ class Grid extends React.Component {
                     row={index[1]}
                     isStart={index[2]}
                     isFinish={index[3]}
-                    isBlocked={blockedNodes[index[0]][index[1]]}
+                    isBlocked={index[4]}
+                    isVisited={index[5]}
                     handleMouseDown={this.handleMouseDown}
                     handleMouseOver={this.handleMouseOver}
                     handleMouseUp={this.handleMouseUp}
@@ -225,6 +263,7 @@ const mapStateToProps = (state) => ({
   isErasing: state.isErasing,
   isDraggingStart: state.isDraggingStart,
   isDraggingFinish: state.isDraggingFinish,
+  isVisualizing: state.isVisualizing,
 });
 
 export default connect(mapStateToProps, {
@@ -232,4 +271,6 @@ export default connect(mapStateToProps, {
   erase,
   dragging_start,
   dragging_finish,
+  visualize_true,
+  visualize_false,
 })(Grid);
